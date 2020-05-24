@@ -6,6 +6,7 @@ const session     = require('express-session');
 const passport    = require('passport');
 const mongo       = require('mongodb').MongoClient;
 const ObjectID    = require('mongodb').ObjectID;
+
 const LocalStrategy = require('passport-local');
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+
 mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
     if(err) {
         console.log('Database error: ' + err);
@@ -43,11 +45,41 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
                 }
             );
         });
+      
+        passport.use(new LocalStrategy(
+          function(username, password, done) {
+            db('test').collection('users').findOne({ username: username }, function (err, user) {
+              console.log('User '+ username +' attempted to log in.');
+              if (err) { return done(err); }
+              if (!user) { return done(null, false); }
+              if (password !== user.password) { return done(null, false); }
+              return done(null, user);
+            });
+          }
+        ));
+      
+        function ensureAuthenticated(req, res, next) {
+          if (req.isAuthenticated()) {
+              return next();
+          }
+          res.redirect('/');
+        };
 
         app.route('/')
           .get((req, res) => {
-            res.render(process.cwd() + '/views/pug/index', {title: 'Hello', message: 'Please login'});
+            res.render(process.cwd() + '/views/pug/index', {title: 'Home Page', message: 'Please login', showLogin: true});
           });
+      
+        app.route('/login')
+          .post(passport.authenticate('local', { failureRedirect: '/' }),(req,res) => {
+               res.redirect('/profile');
+          });
+      
+        app
+         .route('/profile')
+         .get(ensureAuthenticated, (req,res) => {
+            res.render(process.cwd() + '/views/pug/profile');
+         });
 
         app.listen(process.env.PORT || 3000, () => {
           console.log("Listening on port " + process.env.PORT);
