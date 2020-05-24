@@ -38,7 +38,7 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
         });
 
         passport.deserializeUser( (id, done) => {
-            db('test').collection('users').findOne(
+            db.db('test').collection('users').findOne(
                 {_id: new ObjectID(id)},
                 (err, doc) => {
                     done(null, doc);
@@ -48,7 +48,7 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
       
         passport.use(new LocalStrategy(
           function(username, password, done) {
-            db('test').collection('users').findOne({ username: username }, function (err, user) {
+            db.db('test').collection('users').findOne({ username: username }, function (err, user) {
               console.log('User '+ username +' attempted to log in.');
               if (err) { return done(err); }
               if (!user) { return done(null, false); }
@@ -74,12 +74,23 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
           .post(passport.authenticate('local', { failureRedirect: '/' }),(req,res) => {
                res.redirect('/profile');
           });
+          
+        app.route('/logout')
+          .get((req, res) => {
+            req.logout();
+            res.redirect('/');
+        });
       
-        app
-         .route('/profile')
+        app.route('/profile')
          .get(ensureAuthenticated, (req,res) => {
-            res.render(process.cwd() + '/views/pug/profile');
+            res.render(process.cwd() + '/views/pug/profile', {username: req.user.username});
          });
+      
+        app.use((req, res, next) => {
+          res.status(404)
+            .type('text')
+            .send('Not Found');
+        });
 
         app.listen(process.env.PORT || 3000, () => {
           console.log("Listening on port " + process.env.PORT);
