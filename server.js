@@ -1,4 +1,6 @@
 "use strict";
+const routes      = require('./routes.js');
+const auth        = require('./auth.js');
 
 const express     = require("express");
 const fccTesting  = require("./freeCodeCamp/fcctesting.js");
@@ -6,6 +8,7 @@ const session     = require('express-session');
 const passport    = require('passport');
 const mongo       = require('mongodb').MongoClient;
 const ObjectID    = require('mongodb').ObjectID;
+const bcrypt      = require('bcrypt');
 
 const LocalStrategy = require('passport-local');
 
@@ -32,6 +35,10 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
         console.log('Database error: ' + err);
     } else {
         console.log('Successful database connection');
+      
+        auth(app, db);
+      
+        routes(app, db);
 
         passport.serializeUser((user, done) => {
           done(null, user._id);
@@ -52,7 +59,7 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
               console.log('User '+ username +' attempted to log in.');
               if (err) { return done(err); }
               if (!user) { return done(null, false); }
-              if (password !== user.password) { return done(null, false); }
+              if (!bcrypt.compareSync(password, user.password)) { return done(null, false); }
               return done(null, user);
             });
           }
@@ -67,8 +74,38 @@ mongo.connect(process.env.DATABASE,{ useUnifiedTopology: true }, (err, db) => {
 
         app.route('/')
           .get((req, res) => {
-            res.render(process.cwd() + '/views/pug/index', {title: 'Home Page', message: 'Please login', showLogin: true});
+            res.render(process.cwd() + '/views/pug/index', {title: 'Home Page', message: 'Please login', showLogin: true, showRegistration: true});
           });
+      
+        app.route('/register')
+        .post((req, res, next) => {
+          var hash = bcrypt.hashSync(req.body.password, 8);
+          db.db('test').collection('users').findOne({ username: req.body.username }, function(err, user) {
+            if (err) {
+              next(err);
+            } else if (user) {
+              res.redirect('/');
+            } else {
+              db.db('test').collection('users').insertOne({
+                username: req.body.username,
+                password: hash
+              },
+                (err, doc) => {
+                  if (err) {
+                    res.redirect('/');
+                  } else {
+                    next(null, user);
+                  }
+                }
+              )
+            }
+          })
+        },
+          passport.authenticate('local', { failureRedirect: '/' }),
+          (req, res, next) => {
+            res.redirect('/profile');
+          }
+        );
       
         app.route('/login')
           .post(passport.authenticate('local', { failureRedirect: '/' }),(req,res) => {
