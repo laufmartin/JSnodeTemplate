@@ -16,36 +16,45 @@ html
     
     if showLogin
       hr
-      div(class='loginform')
+      div(class='center' id='loginform')
         p Login Form
         form(action='/login', method='post')
           div
-            label Username:
+            label Username: &nbsp
             input(type='text', name='username')
+          br
           div
-            label Password:
+            label Password: &nbsp&nbsp
             input(type='password', name='password')
+          br  
           div
             input(type='submit', value='Log In')
           
     if showRegistration
-      hr
-      div(class='regform')
+      
+      div(class='center' id='regform')
         p Registration Form
         form(action='/register', method='post')
           div
-            label Username:
+            label Username: &nbsp
             input(type='text', name='username')
+          br  
           div
-            label Password:
+            label Password: &nbsp&nbsp
             input(type='password', name='password')
+          br  
           div
             input(type='submit', value='Register')
-            
+      
+      
     script.
       function login(){
+        document.getElementById('loginform').style.display = "block";
+        document.getElementById('regform').style.display = "none";
         console.log("login");
       }
       function reg(){
+        document.getElementById('regform').style.display = "block";
+        document.getElementById('loginform').style.display = "none";
         console.log("reg");
       }
