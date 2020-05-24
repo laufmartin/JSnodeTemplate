@@ -20,8 +20,11 @@ body{
 }
 #loginform{
   border: 1px solid black;
+  width: 30%;
   display:block;
 }
 #regform{
+  border: 1px solid black;
+  width: 30%;
   display:none;
 }
