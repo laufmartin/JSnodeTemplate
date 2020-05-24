@@ -10,6 +10,11 @@
   margin-right: auto;
 }
 .forms{
-  margin-right: 20px;
-  display: block;
+  justify-content: flex-end;
+  display: flex;
+  position: relative;
+  margin-bottom: 50px;
+}
+.regform{
+  display:none;
 }
